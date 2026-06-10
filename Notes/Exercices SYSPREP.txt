@@ -1,0 +1,17 @@
+Exercices SYSPREP
+
+Créez une VM Hyper-V nommée SYSPREP, voici les spécifications:
+RAM: 8Gb
+vCPU: 2
+réseau LAN1
+ISO: Windows Server 2025
+Installez Windows Server 2025 Standard (Desktop experience)
+Pré-configurez Windows Server (Timezone, IE enhanced security, IP, Remote Desktop, Firewall)
+Partitionnez votre disque en 2 (C:\ et D:\) le C:\ doit faire ~40% de la capacité du VHDX (127Go)
+Lancez l'application sysprep de votre VM (C:\Windows\System32\Sysprep\sysprep.exe) en OOBE, generalyze et shutdown
+
+Une fois que votre VM s'est éteinte, la supprimez d'Hyper-V et renommer le VHDX en TEST-SYSPREP et le stocker dans le dossier C:\PARENT
+
+Créez ensuite 2 VM (LAB-WS01 et LAB-WS02) à partir du nouveau sysprep, les 2 VM doivent pouvoir ping 
+
+Bon travail :)

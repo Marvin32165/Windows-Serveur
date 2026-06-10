@@ -1,0 +1,25 @@
+Commutateur : DEM-PRIVATE
+
+Réseau :
+172.16.10.x /24
+DEM-SRV-DC01 172.16.10.10
+DEM-SRV-DC02 172.16.10.11
+DEM-SRV-FIC01 172.16.10.20
+
+add roles and features :
+>
+role or desktop
+desktop : installe tout le service RDS sur le serveur
+>
+>
+web server
+>
+#Remote server administration tools revoir
+>
+>
+ne pas cocher le restart sur le terrain
+>
+
+
+
+gerer un serveur core en cmd : sconfig.cmd
