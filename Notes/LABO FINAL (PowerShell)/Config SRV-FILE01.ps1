@@ -8,4 +8,13 @@ Rename-Computer -NewName "SRV-FILE01" -restart
 
 Add-Computer -DomainName "orion.local" -restart
 ou 
-netdom join SRV-FILE01 /domain:orion.local /userd:ORION\Administrator /passwordd:*
+Netdom join SRV-FILE01 /domain:orion.local /userd:ORION\Administrator /passwordd:*
+
+New-Item -Path "D:\DEPARTMENTS" -ItemType Directory
+New-Item -Path "D:\DEPARTMENTS\Management" -ItemType Directory
+New-Item -Path "D:\DEPARTMENTS\Development" -ItemType Directory
+New-Item -Path "D:\DEPARTMENTS\Accounting" -ItemType Directory
+New-Item -Path "D:\DEPARTMENTS\Public" -ItemType Directory
+
+Get-ChildItem -Path D:\DEPARTMENTS
+
