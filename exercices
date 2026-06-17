@@ -1,0 +1,11 @@
+Sur SRV-AD01, manage, add servers, selectionner les 3 VM créés aujourd'hui (VRDSH, VRDCB, VRDWA), 
+
+Manage, add oles and features, next, remote desktop services installation, standard, session-based, choisir chacun des serveurs pour son role, deploy
+
+remote desktop services, collection, task, create session collection, Collection1, choir, next, next, decocher disks, create
+collection, publish remoteapp programs, 
+
+créer certificat autosigné, ouvrir certlm.msc personal, certificates, "New-SelfSignedCertificate -DnsName "rdwa.orion.local" -CertStoreLocation "cert:\LocalMachine\My" -NotAfter (Get-Date).AddYears(2) -KeyLength 4096 -KeyExportPolicy Exportable -FriendlyName "Coucou"
+
+
+sur AD01, remote desktop services, Collection1, task remoteapp programs, publish
