@@ -1,0 +1,25 @@
+KS.LAN
+kslab.online
+192.168.1.0
+
+création user AD
+New-Mailbox -Name 'Jean Dupont' -Alias 'jean.dupont' -FirstName 'Jean' -LastName 'Dupont' -DisplayName 'Jean Dupont' -UserPrincipalName 'jean.dupont@m.zepp.lan' -OrganizationalUnit 'm.zepp.lan/Admin' -Database 'Mailbox Database 0112725915' -Password (ConvertTo-SecureString 'P@ssw0rd!' -AsPlainText -Force) -ResetPasswordOnNextLogon $truecréation MAIL user existant
+Enable-Mailbox -Identity 'jean.dupont' -Database 'Mailbox Database 0112725915'
+Get-Mailbox -Identity 'jean.dupont' | Format-List Name, Alias, PrimarySmtpAddress, Database
+
+w-ADUser -Name 'Marie Martin' -SamAccountName 'marie.martin' -UserPrincipalName 'marie.martin@m.zepp.lan' -Path 'OU=Admin,DC=m,DC=zepp,DC=lan' -AccountPassword (ConvertTo-SecureString 'P@ssw0rd!' -AsPlainText -Force) -Enabled $true
+Enable-Mailbox -Identity 'marie.martin' -Database 'Mailbox Database 0112725915'
+Get-Mailbox -Identity 'marie.martin' | Format-List Name, Alias, PrimarySmtpAddress, Database
+
+remove mailbox supprime la boite et le compte
+
+Création CA interne, digne de confiance pour nous dans le cadre du TP
+Créer une autoritée de certification
+Ajouter le role AD-CS sur l AD
+Install-WindowsFeature AD-Certificate -IncludeManagementTools
+Install-WindowsFeature ADCS-Web-Enrollment
+Install-AdcsCertificationAuthority -CAType EnterpriseRootCA -CACommonName "CATECHNOCITE" -KeyLength 2048 -HashAlgorithmName SHA256 -Force
+
+fDvAFUxx3aoydqU
+
+New-Mailbox -Name 'Marvin Asov' -DisplayName 'Marvin Zepp' -UserPrincipalName 'marvin.asov@kevinascent.onmicrosoft.com' -Password (ConvertTo-SecureString 'MotDePasse123!' -AsPlainText -Force)

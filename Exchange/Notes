@@ -1,0 +1,208 @@
+AD 10.10.28.121
+EXCHANGE 10.10.28.122
+CLIENT 10.10.28.123
+
+Gateway 10.10.28.254
+
+domaine m.zepp.lan NetBios : MZEPP
+
+créer user technicien qui a tout les droits admin, mettre les machines dans le domaine, 
+
+
+
+
+
+
+
+
+Comment fonctionne un PKI ?
+exemple
+CI 
+Nom : Zepp
+Prénom : Marvin
+Autres infos,...
+cette carte, a été délivré par xx
+ex commune de mons, appartient a l'administration belge
+
+Maintenant je vais vers quelqu'un, je lui dis je m'appelle marvin zepp, qui affirme ? moi meme, donc "certificat autosigné" Sur mais mensonge possible
+Je crée chez moi une authorité de certification, CA, (ici CA_MARVIN), avec ce CA je délivre des certificats, pour stagiaire1, stagiaire2, formateur, etc...
+Cette autoritée de certification, dans l'environnement CA_MARVIN, considéré de confiance, j'importe ce CA dans les PC de tout le monde, donc quand je vois que le certificat est délivré par cette CA, le pc remonte la chaine de transmission, 
+je vois un certificat pour serveur web, je regade qui l'as emis, si c'est CA_MARVIN, c'est de confiance, si je débarque 
+
+!!
+# PKI — Fiche mémo
+
+**PKI = Public Key Infrastructure (infrastructure à clés publiques).**
+Le système qui transforme une simple clé publique en **identité vérifiable**, grâce à des autorités qui signent des certificats dans une **chaîne de confiance**.
+
+---
+
+## 1. Le problème de départ
+
+- Cryptographie asymétrique = une **paire de clés** : clé **privée** (secrète) + clé **publique** (distribuable).
+- Ce qui est chiffré/signé avec l'une se vérifie avec l'autre.
+- **Mais** une clé publique seule ne prouve aucune identité. N'importe qui peut dire « cette clé est celle du serveur Exchange ».
+
+## 2. L'analogie qui résume tout
+
+| Situation | Qui affirme l'identité ? | Confiance |
+|---|---|---|
+| Je dis « je m'appelle Marvin Zepp » | Moi-même → **certificat auto-signé** | Aucune (mensonge possible) |
+| Un tiers reconnu garantit que je suis Marvin Zepp | Une **CA (autorité de certification)** | Oui, si on fait confiance au tiers |
+
+## 3. La solution : la CA (Certificate Authority)
+
+- Je crée une autorité, ex. **`CA_MARVIN`**.
+- Avec elle, je **délivre et signe** les certificats de tout le monde : `stagiaire1`, `formateur`, `serveur web`, `mail.m.zepp.lan`…
+- Ce n'est plus le sujet qui s'auto-atteste : c'est un **tiers** qui atteste.
+
+## 4. Établir la confiance : importer la CA racine
+
+- J'importe le **certificat racine de `CA_MARVIN`** dans le magasin « Autorités de certification racines de confiance » de tous les PC (via **GPO** en environnement AD).
+- À partir de là, chaque machine fait confiance à **tout ce que `CA_MARVIN` a signé**.
+
+## 5. La vérification : remonter la chaîne de confiance
+
+Quand un PC reçoit un certificat (ex. celui d'un serveur web), il regarde **qui l'a émis** :
+
+- Émis par `CA_MARVIN` → présente dans le magasin de confiance → **validé**, connexion HTTPS sans alerte.
+- Émis par une CA inconnue, ou auto-signé → la chaîne ne remonte vers **aucune racine connue** → **alerte de sécurité**.
+
+> **Chaîne de confiance :** certificat serveur → CA intermédiaire → **CA racine** (root) déjà connue du client.
+
+### Exemple réel : le certificat de `*.google.com`
+
+La hiérarchie affichée dans le navigateur (visionneuse de certificats) :
+
+```
+GTS Root R1          ← CA RACINE (root)  — préinstallée dans Windows/navigateur
+  └─ WR2             ← CA INTERMÉDIAIRE   — signée par la racine
+       └─ *.google.com   ← CERTIFICAT SERVEUR (feuille) — signé par l'intermédiaire
+```
+
+Lecture de bas en haut, c'est exactement la vérification du PC :
+
+1. Le serveur présente **`*.google.com`** (un certificat **wildcard** : valable pour tous les sous-domaines `xxx.google.com`).
+2. Ce certificat dit « je suis signé par **WR2** ». Le PC vérifie la signature de WR2.
+3. WR2 n'est pas connu directement, mais il dit « je suis signé par **GTS Root R1** ».
+4. **GTS Root R1** (Google Trust Services) est une **CA publique préinstallée** dans le magasin racine → confiance établie → la chaîne remonte jusqu'à une racine connue → **certificat validé, cadenas vert**.
+
+Le parallèle avec ton lab :
+
+| Exemple Google | Ton environnement |
+|---|---|
+| `GTS Root R1` (racine publique) | `CA_MARVIN` (racine d'entreprise, importée par GPO) |
+| `WR2` (intermédiaire) | (souvent absente en labo : la racine signe directement) |
+| `*.google.com` (feuille) | `mail.m.zepp.lan` sur `EXCHANGE-MZEPP` |
+
+> À retenir : une chaîne réelle a souvent **3 niveaux** (racine → intermédiaire → serveur). L'intermédiaire évite d'exposer la clé privée de la racine au quotidien — si l'intermédiaire est compromis, on le révoque sans toucher à la racine.
+
+## 6. Pourquoi c'est sûr (le point qui blinde l'oral)
+
+- La CA signe le certificat avec sa **clé privée** (qu'elle seule possède).
+- Le PC vérifie cette signature avec la **clé publique** de la CA (contenue dans le certificat racine importé).
+- Un attaquant **ne peut pas fabriquer un faux certificat « signé CA_MARVIN »** sans voler la clé privée de la CA. C'est la signature cryptographique, pas le nom écrit dessus, qui fait foi.
+
+## 7. Les 3 types de CA à distinguer
+
+| Type | De confiance où ? | Usage |
+|---|---|---|
+| **Auto-signé** | Nulle part (alerte partout) | Tests rapides, labo |
+| **CA interne / d'entreprise** (`CA_MARVIN`) | Uniquement sur les PC où la racine a été importée | Réseau d'entreprise, AD |
+| **CA publique** (DigiCert, Let's Encrypt…) | Partout (préinstallée dans Windows et les navigateurs) | Sites/services exposés sur Internet |
+
+## 8. Briques de gestion à connaître
+
+- **CSR** (Certificate Signing Request) : la demande qu'on envoie à la CA pour obtenir un certificat → `New-ExchangeCertificate -GenerateRequest`.
+- **Révocation** (CRL / OCSP) : déclarer un certificat invalide **avant** sa date d'expiration (clé volée, serveur déclassé).
+- **Expiration** : tout certificat a une date de fin ; il faut le renouveler.
+
+---
+
+## En une phrase
+
+> Un certificat auto-signé dit « c'est moi qui le dis » ; la PKI ajoute une **autorité de confiance** qui signe à ma place, et chaque machine valide en **remontant la chaîne** jusqu'à une racine qu'elle connaît déjà.
+
+## Lien avec le TP Exchange
+
+Le serveur `EXCHANGE-MZEPP` présente un certificat pour `mail.m.zepp.lan`.
+- Signé par une CA reconnue du client (CA d'entreprise via AD, ou CA publique) → Outlook/OWA se connecte sans avertissement.
+- Auto-signé → fonctionne, mais le client affiche une alerte (cas classique en labo).
+![alt text](image.png)
+
+!!!!!!!
+
+# Chiffrement asymétrique — les deux sens des clés
+
+**Idée clé :** avec une paire de clés (privée + publique), ce qu'**une** clé verrouille, **l'autre** seule peut le déverrouiller. Selon la clé qu'on utilise pour « fermer », on obtient **deux services différents**.
+
+---
+
+## Les deux sens (à ne JAMAIS confondre)
+
+| | Sens 1 — Confidentialité | Sens 2 — Signature |
+|---|---|---|
+| On chiffre avec… | la clé **publique** du destinataire | sa **propre clé privée** |
+| On déchiffre avec… | la clé **privée** du destinataire | la clé **publique** de l'émetteur |
+| But | **Secret** : seul le destinataire peut lire | **Authenticité + intégrité** : prouver qui a émis |
+| Cache le contenu ? | **Oui** | **Non** (tout le monde a la clé publique) |
+
+---
+
+## Sens 2 — « chiffrer avec la clé privée, déchiffrer avec la clé publique »
+
+C'est ce qui t'intéresse, et c'est **contre-intuitif** au premier abord.
+
+- Je « chiffre » (= **je signe**) avec **MA clé privée**, que je suis le seul à posséder.
+- N'importe qui peut « déchiffrer » (= **vérifier**) avec **MA clé publique**, qui est… publique.
+
+**Donc ça ne cache rien du tout.** Si tout le monde peut déchiffrer avec une clé publique, il n'y a aucun secret.
+
+➡️ Le but n'est pas la confidentialité, mais la **preuve d'origine** :
+> « Si ça se déchiffre correctement avec la clé publique de Marvin, alors **seul Marvin** a pu le produire (lui seul a la clé privée). »
+
+C'est exactement une **signature numérique** : elle prouve **qui** a émis (authenticité) et que le contenu n'a **pas été modifié** (intégrité).
+
+---
+
+## Comment ça marche vraiment (la nuance pour l'oral)
+
+On ne signe pas tout le message : ce serait lent. En pratique :
+
+1. On calcule une **empreinte (hash)** du message (ex. SHA-256) → une suite courte et unique.
+2. On **chiffre cette empreinte avec la clé privée** → c'est **la signature**.
+3. On envoie : message **en clair** + signature.
+
+Côté destinataire :
+
+1. Il recalcule lui-même le hash du message reçu.
+2. Il **déchiffre la signature avec la clé publique** de l'émetteur → il récupère le hash d'origine.
+3. Il **compare les deux hash** :
+   - identiques → signature valide : bon émetteur **et** message intact.
+   - différents → message modifié ou faux émetteur → rejet.
+
+---
+
+## Le lien direct avec la PKI / les certificats
+
+C'est **exactement** ce sens 2 qui fait fonctionner une CA :
+
+- La **CA signe** un certificat = elle chiffre le hash du certificat avec **sa clé privée**.
+- Le **PC vérifie** = il déchiffre cette signature avec la **clé publique de la CA** (contenue dans le certificat racine importé) et compare les hash.
+- Match → le certificat est authentique et non falsifié → confiance.
+
+C'est pour ça qu'un attaquant ne peut pas fabriquer un faux « certificat signé CA_MARVIN » : il faudrait la **clé privée** de la CA, qu'il n'a pas.
+
+---
+
+## En une phrase à retenir
+
+> **Clé publique pour chiffrer → on protège un secret.**
+> **Clé privée pour chiffrer (= signer) → on prouve une identité.**
+> La signature ne cache rien ; elle garantit *qui* a écrit et *que rien n'a bougé*.
+
+---
+
+### Petit avertissement de vocabulaire
+
+Dire « chiffrer avec la clé privée » est l'image classique (et exacte) pour **RSA**. Le terme rigoureux est **« signer »** : sur d'autres algorithmes modernes (ECDSA…), signature et chiffrement sont des opérations distinctes. Mais l'intuition « privée = signe, publique = vérifie » reste toujours vraie.
